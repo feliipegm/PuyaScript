@@ -1,5 +1,5 @@
 # PuyaScript
-
+![PuyaScript](logo/puyaLogo.png)
 Lenguaje de programación de sintaxis andaluza. Hay dos intérpretes equivalentes:
 `src/puyascript.rs` (Rust, el principal) y `src/puyascript.py` (Python).
 
@@ -31,4 +31,4 @@ Abre una terminal nueva y ejecuta:
 
 ## Documentación
 
-Mira `docs/DOCUMENTACION_PUYASCRIPT.md`.
+[Enlace a la documentación](/docs/DOCUMENTACION_PUYASCRIPT.md)
