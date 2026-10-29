@@ -15,7 +15,7 @@ const PALABRAS_RESERVADAS: &[&str] = &[
     "trincar", "banda", "churumbel", "poriera", "movida", "suelta", "chivato",
     "siAcaso", "siNo", "oSiNo", "esto", "josear", "arteCaso", "caso", "alCarajoPipa",
     "noNiNa", "estoY", "estoO", "intocable", "mamaDe", "privao", "palPueblo",
-    "roña", "tiraPalante", "verdá", "esIA", "guita", "suelto", "palique", "fijo", "na", "peña",
+    "roña", "tiraPalante", "verdá", "esIA", "guita", "suelto", "palique", "fijo", "na", "peña", "dame",
 ];
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -388,6 +388,7 @@ enum Expr {
     No(Box<Expr>),
     Bin(Box<Expr>, Op, Box<Expr>),
     Llamada(String, Vec<Expr>),
+    Dame(Option<Box<Expr>>),
 }
 
 struct Func {
@@ -527,6 +528,22 @@ impl Parser {
             TokenType::Keyword if self.es_kw(&["verdá", "esIA"]) => {
                 let v = self.consumir(TokenType::Keyword)?;
                 Expr::Literal(Value::Fijo(v == "verdá"))
+            }
+            TokenType::Keyword if self.es_kw(&["dame"]) => {
+                self.avanzar();
+                let prompt = if self.es(TokenType::ParenIzq) {
+                    self.consumir(TokenType::ParenIzq)?;
+                    let p = if !self.es(TokenType::ParenDer) {
+                        Some(Box::new(self.expresion(1)?))
+                    } else {
+                        None
+                    };
+                    self.consumir(TokenType::ParenDer)?;
+                    p
+                } else {
+                    None
+                };
+                Expr::Dame(prompt)
             }
             TokenType::Identificador => {
                 let nombre = self.consumir(TokenType::Identificador)?;
@@ -1016,6 +1033,20 @@ impl Interprete {
                 operar(*op, a, b)
             }
             Expr::Llamada(nombre, args) => self.llamar(nombre, args),
+            Expr::Dame(prompt) => {
+                if let Some(p_expr) = prompt {
+                    let p_val = self.eval(p_expr)?;
+                    print!("{}", p_val);
+                    let _ = io::stdout().flush();
+                }
+                let mut entrada = String::new();
+                if io::stdin().read_line(&mut entrada).is_err() {
+                    return err("¡Poriera! Error al leer la entrada del usuario.");
+                }
+                // Limpiar retorno de carro y saltos de línea de la consola
+                let limpia = entrada.trim_end_matches(['\r', '\n']).to_string();
+                Ok(Value::Palique(limpia.into()))
+            }
         }
     }
 

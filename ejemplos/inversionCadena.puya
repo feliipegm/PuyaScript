@@ -1,0 +1,23 @@
+// ==========================================
+// Inversor de elementos en una peña
+// ==========================================
+
+movida invertirPeña(peña lista, guita tamano) {
+    guita inicio = 0;
+    guita fin = tamano - 1;
+
+    josear (inicio < fin) {
+        guita temp = lista[inicio];
+        lista[inicio] = lista[fin];
+        lista[fin] = temp;
+
+        inicio = inicio + 1;
+        fin = fin - 1;
+    }
+}
+
+peña originales = [5, 10, 15, 20, 25];
+chivato("Peña original: " + originales);
+
+invertirPeña(originales, 5);
+chivato("¡Peña invertida con arte!: " + originales);
