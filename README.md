@@ -1,5 +1,5 @@
 # PuyaScript
-![PuyaScript](/logo/puyalogo.png)
+![PuyaScript](logo/puyaLogo.png)
 Lenguaje de programación de sintaxis andaluza. Hay dos intérpretes equivalentes:
 `src/puyascript.rs` (Rust, el principal) y `src/puyascript.py` (Python).
 
