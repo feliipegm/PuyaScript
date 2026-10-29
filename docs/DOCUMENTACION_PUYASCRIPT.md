@@ -1,4 +1,4 @@
-![PuyaScript](logo/puyaLogo.png)
+![PuyaScript](../logo/puyaLogo.png)
 # PuyaScript — Documentación
 
 PuyaScript es un lenguaje de programación interpretado, de sintaxis inspirada en la jerga andaluza. Hay dos intérpretes equivalentes, uno en Rust (`src/puyascript.rs`, el principal) y otro en Python 3 (`src/puyascript.py`). Ambos funcionan en tres fases: **lexer → parser (AST) → intérprete**.
