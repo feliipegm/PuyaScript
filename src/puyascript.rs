@@ -5,8 +5,9 @@ use std::fs;
 use std::io::{self, BufWriter, Write};
 use std::process;
 use std::rc::Rc;
+use std::cell::RefCell;
 
-const TIPOS: [&str; 4] = ["guita", "suelto", "palique", "fijo"];
+const TIPOS: [&str; 5] = ["guita", "suelto", "palique", "fijo", "peña"];
 const MAX_PROFUNDIDAD: usize = 10_000;
 const TAMANO_PILA: usize = 512 * 1024 * 1024;
 
@@ -24,6 +25,7 @@ enum Value {
     Suelto(f64),
     Palique(Rc<str>),
     Fijo(bool),
+    Pena(Rc<RefCell<Vec<Value>>>),
     Na,
 }
 
@@ -34,6 +36,7 @@ impl Value {
             Value::Guita(n) => *n != 0,
             Value::Suelto(f) => *f != 0.0,
             Value::Palique(s) => !s.is_empty(),
+            Value::Pena(arr) => !arr.borrow().is_empty(),
             Value::Na => false,
         }
     }
@@ -46,6 +49,11 @@ impl fmt::Display for Value {
             Value::Suelto(v) => write!(f, "{:?}", v),
             Value::Palique(v) => write!(f, "{}", v),
             Value::Fijo(v) => write!(f, "{}", if *v { "verdá" } else { "esIA" }),
+            Value::Pena(arr) => {
+                let elementos = arr.borrow();
+                let reps: Vec<String> = elementos.iter().map(|e| e.to_string()).collect();
+                write!(f, "[{}]", reps.join(", "))
+            }
             Value::Na => write!(f, "na"),
         }
     }
@@ -78,6 +86,8 @@ enum TokenType {
     ParenDer,
     LlaveIzq,
     LlaveDer,
+    CorcheteIzq,
+    CorcheteDer,
     Coma,
     Punto,
     DosPuntos,
@@ -99,6 +109,8 @@ impl TokenType {
             TokenType::ParenDer => "')'",
             TokenType::LlaveIzq => "'{'",
             TokenType::LlaveDer => "'}'",
+            TokenType::CorcheteIzq => "'['",
+            TokenType::CorcheteDer => "']'",
             TokenType::Coma => "','",
             TokenType::Punto => "'.'",
             TokenType::DosPuntos => "':'",
@@ -173,7 +185,6 @@ impl Lexer {
             s.push(c);
             self.avanzar();
         }
-        // El punto solo cuenta si va seguido de un dígito.
         if self.actual() == Some('.') && self.siguiente().map_or(false, |c| c.is_ascii_digit()) {
             s.push('.');
             self.avanzar();
@@ -269,6 +280,8 @@ impl Lexer {
                         ')' => TokenType::ParenDer,
                         '{' => TokenType::LlaveIzq,
                         '}' => TokenType::LlaveDer,
+                        '[' => TokenType::CorcheteIzq,
+                        ']' => TokenType::CorcheteDer,
                         ',' => TokenType::Coma,
                         '.' => TokenType::Punto,
                         ':' => TokenType::DosPuntos,
@@ -335,6 +348,8 @@ impl Op {
 enum Expr {
     Literal(Value),
     Variable(String),
+    Arreglo(Vec<Expr>),
+    Indexacion(Box<Expr>, Box<Expr>),
     Neg(Box<Expr>),
     No(Box<Expr>),
     Bin(Box<Expr>, Op, Box<Expr>),
@@ -349,6 +364,7 @@ struct Func {
 enum Stmt {
     DeclVar(String, Expr),
     Asignacion(String, Expr),
+    AsignacionIndexada(String, Expr, Expr),
     Chivato(Expr),
     Expr(Expr),
     Si {
@@ -446,45 +462,67 @@ impl Parser {
     }
 
     fn primaria(&mut self) -> Result<Expr, String> {
-        match self.actual().tipo {
+        let mut expr = match self.actual().tipo {
             TokenType::NumeroGuita => {
                 let v = self.consumir(TokenType::NumeroGuita)?;
                 match v.parse::<i64>() {
-                    Ok(n) => Ok(Expr::Literal(Value::Guita(n))),
-                    Err(_) => self.error("Número entero demasiado grande."),
+                    Ok(n) => Expr::Literal(Value::Guita(n)),
+                    Err(_) => return self.error("Número entero demasiado grande."),
                 }
             }
             TokenType::NumeroSuelto => {
                 let v = self.consumir(TokenType::NumeroSuelto)?;
                 match v.parse::<f64>() {
-                    Ok(n) => Ok(Expr::Literal(Value::Suelto(n))),
-                    Err(_) => self.error("Número no válido."),
+                    Ok(n) => Expr::Literal(Value::Suelto(n)),
+                    Err(_) => return self.error("Número no válido."),
                 }
             }
             TokenType::Palique => {
                 let v = self.consumir(TokenType::Palique)?;
-                Ok(Expr::Literal(Value::Palique(v.into())))
+                Expr::Literal(Value::Palique(v.into()))
             }
             TokenType::Keyword if self.es_kw(&["verdá", "esIA"]) => {
                 let v = self.consumir(TokenType::Keyword)?;
-                Ok(Expr::Literal(Value::Fijo(v == "verdá")))
+                Expr::Literal(Value::Fijo(v == "verdá"))
             }
             TokenType::Identificador => {
                 let nombre = self.consumir(TokenType::Identificador)?;
                 if self.es(TokenType::ParenIzq) {
-                    Ok(Expr::Llamada(nombre, self.argumentos()?))
+                    Expr::Llamada(nombre, self.argumentos()?)
                 } else {
-                    Ok(Expr::Variable(nombre))
+                    Expr::Variable(nombre)
                 }
+            }
+            TokenType::CorcheteIzq => {
+                self.avanzar();
+                let mut elems = Vec::new();
+                if !self.es(TokenType::CorcheteDer) {
+                    elems.push(self.expresion(1)?);
+                    while self.es(TokenType::Coma) {
+                        self.avanzar();
+                        elems.push(self.expresion(1)?);
+                    }
+                }
+                self.consumir(TokenType::CorcheteDer)?;
+                Expr::Arreglo(elems)
             }
             TokenType::ParenIzq => {
                 self.avanzar();
                 let e = self.expresion(1)?;
                 self.consumir(TokenType::ParenDer)?;
-                Ok(e)
+                e
             }
-            _ => self.error(&format!("Expresión no reconocida: {}", describir(self.actual()))),
+            _ => return self.error(&format!("Expresión no reconocida: {}", describir(self.actual()))),
+        };
+
+        while self.es(TokenType::CorcheteIzq) {
+            self.avanzar();
+            let idx = self.expresion(1)?;
+            self.consumir(TokenType::CorcheteDer)?;
+            expr = Expr::Indexacion(Box::new(expr), Box::new(idx));
         }
+
+        Ok(expr)
     }
 
     fn unaria(&mut self) -> Result<Expr, String> {
@@ -524,7 +562,6 @@ impl Parser {
         }
     }
 
-    // Precedencia por escalada: a igual nivel se evalúa de izquierda a derecha.
     fn expresion(&mut self, minima: u8) -> Result<Expr, String> {
         let mut izq = self.unaria()?;
         while let Some(op) = self.op_actual() {
@@ -645,7 +682,7 @@ impl Parser {
             TokenType::Keyword => {
                 let kw = self.actual().valor.clone();
                 match kw.as_str() {
-                    "guita" | "suelto" | "palique" | "fijo" => {
+                    "guita" | "suelto" | "palique" | "fijo" | "peña" => {
                         self.avanzar();
                         let nombre = self.consumir(TokenType::Identificador)?;
                         self.consumir(TokenType::Asigna)?;
@@ -690,6 +727,15 @@ impl Parser {
                     let args = self.argumentos()?;
                     self.consumir(TokenType::PuntoComa)?;
                     return Ok(Stmt::Expr(Expr::Llamada(nombre, args)));
+                }
+                if self.es(TokenType::CorcheteIzq) {
+                    self.avanzar();
+                    let idx = self.expresion(1)?;
+                    self.consumir(TokenType::CorcheteDer)?;
+                    self.consumir(TokenType::Asigna)?;
+                    let e = self.expresion(1)?;
+                    self.consumir(TokenType::PuntoComa)?;
+                    return Ok(Stmt::AsignacionIndexada(nombre, idx, e));
                 }
                 self.consumir(TokenType::Asigna)?;
                 let e = self.expresion(1)?;
@@ -806,7 +852,6 @@ impl Interprete {
         }
     }
 
-    // Una función solo ve sus variables locales y las globales.
     fn buscar(&self, nombre: &str) -> Option<&Value> {
         self.marcos.last().and_then(|m| m.get(nombre)).or_else(|| self.global.get(nombre))
     }
@@ -837,6 +882,27 @@ impl Interprete {
                 Some(v) => Ok(v.clone()),
                 None => err(format!("¡Poriera! La variable '{}' no existe.", n)),
             },
+            Expr::Arreglo(elems) => {
+                let mut res = Vec::new();
+                for elem in elems {
+                    res.push(self.eval(elem)?);
+                }
+                Ok(Value::Pena(Rc::new(RefCell::new(res))))
+            }
+            Expr::Indexacion(arr_expr, idx_expr) => {
+                let arr_val = self.eval(arr_expr)?;
+                let idx_val = self.eval(idx_expr)?;
+                match (arr_val, idx_val) {
+                    (Value::Pena(arr), Value::Guita(idx)) => {
+                        let elementos = arr.borrow();
+                        if idx < 0 || (idx as usize) >= elementos.len() {
+                            return err("¡Poriera! Índice fuera de los límites de la peña.");
+                        }
+                        Ok(elementos[idx as usize].clone())
+                    }
+                    _ => err("¡Poriera! Solo se puede indexar una 'peña' usando un número 'guita'."),
+                }
+            }
             Expr::Neg(x) => match self.eval(x)? {
                 Value::Guita(n) => n.checked_neg().map(Value::Guita).map_or_else(desbordamiento, Ok),
                 Value::Suelto(f) => Ok(Value::Suelto(-f)),
@@ -917,6 +983,24 @@ impl Interprete {
                 let v = self.eval(e)?;
                 self.asignar(nombre, v)?;
             }
+            Stmt::AsignacionIndexada(nombre, idx_expr, val_expr) => {
+                let arr_val = match self.buscar(nombre) {
+                    Some(v) => v.clone(),
+                    None => return err(format!("¡Poriera! La variable '{}' no existe.", nombre)),
+                };
+                let idx_val = self.eval(idx_expr)?;
+                let nuevo_val = self.eval(val_expr)?;
+                match (arr_val, idx_val) {
+                    (Value::Pena(arr), Value::Guita(idx)) => {
+                        let mut elementos = arr.borrow_mut();
+                        if idx < 0 || (idx as usize) >= elementos.len() {
+                            return err("¡Poriera! Índice fuera de los límites de la peña.");
+                        }
+                        elementos[idx as usize] = nuevo_val;
+                    }
+                    _ => return err("¡Poriera! Solo se puede modificar elementos de una 'peña' con índice 'guita'."),
+                }
+            }
             Stmt::Chivato(e) => {
                 let v = self.eval(e)?;
                 let _ = writeln!(self.out, "{}", v);
@@ -985,8 +1069,6 @@ impl Interprete {
     }
 
     fn ejecutar(&mut self, programa: &[Stmt]) -> Result<(), String> {
-        // Las movidas del nivel principal se registran antes de ejecutar nada,
-        // así se pueden llamar aunque estén declaradas más abajo.
         for s in programa {
             if let Stmt::DeclFuncion(nombre, f) = s {
                 self.funciones.insert(nombre.clone(), Rc::clone(f));
@@ -1049,7 +1131,6 @@ fn main() {
         eprintln!("¡Poriera! El archivo tiene que ser .puya");
         process::exit(1);
     }
-    // Hilo con pila grande para que la recursión profunda no reviente la pila.
     let a = archivo.clone();
     let codigo = match std::thread::Builder::new().stack_size(TAMANO_PILA).spawn(move || ejecutar_archivo(&a)) {
         Ok(h) => h.join().unwrap_or(1),
