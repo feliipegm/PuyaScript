@@ -1,4 +1,3 @@
-![PuyaScript](../logo/puyaLogo.png)
 # PuyaScript — Documentación
 
 PuyaScript es un lenguaje de programación interpretado, de sintaxis inspirada en la jerga andaluza. Hay dos intérpretes equivalentes, uno en Rust (`src/puyascript.rs`, el principal) y otro en Python 3 (`src/puyascript.py`). Ambos funcionan en tres fases: **lexer → parser (AST) → intérprete**.
@@ -55,13 +54,13 @@ chivato("¡Ozú, qué calor!");
 - Los números negativos se escriben con el operador `-` (`-5`, `-x`).
 - Los arreglos (`peña`) se delimitan con corchetes `[...]` y sus elementos se separan por comas.
 
-> Los tipos se usan al declarar, pero **no se comprueban** en ejecución: el intérprete no impide guardar un `palique` en una variable `guita`.
+> **Sistema de Tipado Estricto:** Los tipos declarados **se comprueban en ejecución**. Intentar asignar un valor de tipo incorrecto (ej. asignar un `palique` a un `guita`) lanzará un error fatal: `¡Poriera! No puedes asignar un 'palique' a la variable 'x' que es de tipo 'guita'.`
 
 ---
 
-## 4. Variables
+## 4. Variables y Constantes
 
-### Declaración
+### Declaración de Variables
 ```puya
 guita edad = 30;
 suelto altura = 1.75;
@@ -70,12 +69,23 @@ fijo contento = verdá;
 peña numeros = [1, 2, 3, 4, 5];
 ```
 
+### Declaración de Constantes (`intocable`)
+La palabra clave `intocable` precede al tipo para declarar una constante inmutable:
+```puya
+intocable guita MAXIMO = 100;
+intocable palique IP_SERVIDOR = "127.0.0.1";
+```
+
 ### Asignación
 ```puya
 edad = edad + 1;
 numeros[0] = 10;
 ```
-Asignar a una variable que no existe lanza `¡Poriera! No puedes asignar a '...': no existe.`
+
+#### Errores de asignación:
+- Asignar a una variable que no existe: `¡Poriera! No puedes asignar a '...': no existe.`
+- Asignar un valor incompatibles con el tipo declarado: `¡Poriera! No puedes asignar un '...' a la variable '...' que es de tipo '...'.`
+- Intentar reasignar o modificar una constante `intocable`: `¡Poriera! La constante 'intocable' '...' no se puede sobreescribir.`
 
 ---
 
@@ -251,6 +261,7 @@ movida nombre(tipo param1, tipo param2) -> tipoRetorno {
 
 - `suelta` devuelve un valor (equivale a `return`).
 - `-> tipo` es opcional; si se omite, es `na`. El tipo de retorno no se comprueba.
+- Los tipos de los argumentos pasados a la función se verifican al ser llamada.
 - Se pueden llamar como expresión o como sentencia (`saluda("Ana");`).
 - Se admite recursividad.
 
@@ -287,10 +298,10 @@ saluda("Paco");
 ## 13. Palabras reservadas
 
 **En uso:**
-`guita`, `suelto`, `palique`, `fijo`, `peña`, `na`, `verdá`, `esIA`, `chivato`, `siAcaso`, `siNo`, `oSiNo`, `josear`, `alCarajoPipa`, `tiraPalante`, `arteCaso`, `caso`, `movida`, `suelta`, `estoY`, `estoO`, `noNiNa`
+`guita`, `suelto`, `palique`, `fijo`, `peña`, `intocable`, `na`, `verdá`, `esIA`, `chivato`, `siAcaso`, `siNo`, `oSiNo`, `josear`, `alCarajoPipa`, `tiraPalante`, `arteCaso`, `caso`, `movida`, `suelta`, `estoY`, `estoO`, `noNiNa`
 
 **Reservadas sin uso actual** (reservadas para futuras versiones):
-`trincar`, `banda`, `churumbel`, `poriera`, `esto`, `intocable`, `mamaDe`, `privao`, `palPueblo`, `roña`
+`trincar`, `banda`, `churumbel`, `poriera`, `esto`, `mamaDe`, `privao`, `palPueblo`, `roña`
 
 ---
 
@@ -301,7 +312,7 @@ programa     := sentencia*
 sentencia    := declVar | asignacion | asignacionIndexada | llamada ';' | chivato 
               | siAcaso | josear | arteCaso | movida | suelta | alCarajoPipa ';'
               | tiraPalante ';'
-declVar      := tipo ID '=' expresion ';'
+declVar      := 'intocable'? tipo ID '=' expresion ';'
 asignacion   := ID '=' expresion ';'
 asignacionIndexada := ID '[' expresion ']' '=' expresion ';'
 chivato      := 'chivato' '(' expresion ')' ';'
@@ -327,30 +338,27 @@ primaria     := NUMERO | TEXTO | 'verdá' | 'esIA' | ID | ID '(' args ')'
 
 - **Sin `default`** en `arteCaso`.
 - **Sin entrada de usuario**, objetos ni librería estándar.
-- Los tipos declarados no se comprueban en ejecución.
-- Los errores de ejecución (no los de lexer/parser) no indican línea.
+- Los errores de ejecución (no los de lexer/parser) no indican número de línea.
 
 ---
 
-## 16. Ejemplo completo con `peña`
+## 16. Ejemplo completo
 
 ```puya
-// Ejemplo con peña y funciones
-movida sumarPena(peña lista, guita tamano) -> guita {
-    guita total = 0;
-    josear (guita i = 0; i < tamano; i = i + 1) {
-        total = total + lista[i];
+// Ejemplo con peña, constantes y comprobación de tipos
+intocable guita MAX_INTENTOS = 3;
+intocable palique PREFIJO = "Aviso: ";
+
+movida procesarPeña(peña lista, guita limite) {
+    josear (guita i = 0; i < limite; i = i + 1) {
+        siAcaso (i >= MAX_INTENTOS) {
+            chivato(PREFIJO + "Límite alcanzado");
+            alCarajoPipa;
+        }
+        chivato("Elemento " + i + ": " + lista[i]);
     }
-    suelta total;
 }
 
 peña misNumeros = [10, 20, 30, 40];
-chivato("Valores originales: " + misNumeros);
-
-// Modificar elemento de la peña
-misNumeros[2] = 50;
-chivato("Valores modificados: " + misNumeros);
-
-guita resultado = sumarPena(misNumeros, 4);
-chivato("La suma total es: " + resultado);
+procesarPeña(misNumeros, 4);
 ```

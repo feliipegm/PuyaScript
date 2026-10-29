@@ -14,13 +14,19 @@ Abre una terminal nueva y ejecuta:
     puyascript ejemplos/prueba.puya
 
 ## Instalar (Windows x64)
-    git clone https://github.com/feliipegm/PuyaScript.git
+    Para instalar PuyaScript desde el código fuente, necesitas tener instalado **Rust y Cargo** en tu equipo.
+
+    1. Clona el repositorio:
+    ```bash
+    git clone [https://github.com/feliipegm/PuyaScript.git](https://github.com/feliipegm/PuyaScript.git)
     cd PuyaScript
-    instalador\instalar-puyascript-windows.bat
-    
-    Cuando se instale, se debe abrir una nueva terminal o reiniciar el IDE y ejecutar:
-        puyascript ejemplos/prueba.puya
-        
+    Ejecutar en PuyasScript/src el siguiente comando:
+    rustc puyascript.rs -O
+    copy src/instalador/puyascript.exe /instalador o mover el .exe a la carpeta instalador
+    Luego ejecutar 
+        instalador\instalar-puyascript-windows.bat
+    Una vez instalado, reiniciar el terminal o el IDE.```
+
 ## Con Python
 
     python3 src/puyascript.py ejemplos/prueba.puya

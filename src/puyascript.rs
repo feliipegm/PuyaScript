@@ -18,6 +18,29 @@ const PALABRAS_RESERVADAS: &[&str] = &[
     "roña", "tiraPalante", "verdá", "esIA", "guita", "suelto", "palique", "fijo", "na", "peña",
 ];
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Tipo {
+    Guita,
+    Suelto,
+    Palique,
+    Fijo,
+    Pena,
+    Na,
+}
+
+impl fmt::Display for Tipo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Tipo::Guita => write!(f, "guita"),
+            Tipo::Suelto => write!(f, "suelto"),
+            Tipo::Palique => write!(f, "palique"),
+            Tipo::Fijo => write!(f, "fijo"),
+            Tipo::Pena => write!(f, "peña"),
+            Tipo::Na => write!(f, "na"),
+        }
+    }
+}
+
 // --- 1. VALORES ---
 #[derive(Clone)]
 enum Value {
@@ -30,6 +53,17 @@ enum Value {
 }
 
 impl Value {
+    fn tipo(&self) -> Tipo {
+        match self {
+            Value::Guita(_) => Tipo::Guita,
+            Value::Suelto(_) => Tipo::Suelto,
+            Value::Palique(_) => Tipo::Palique,
+            Value::Fijo(_) => Tipo::Fijo,
+            Value::Pena(_) => Tipo::Pena,
+            Value::Na => Tipo::Na,
+        }
+    }
+
     fn es_cierto(&self) -> bool {
         match self {
             Value::Fijo(b) => *b,
@@ -357,12 +391,12 @@ enum Expr {
 }
 
 struct Func {
-    parametros: Vec<String>,
+    parametros: Vec<(Tipo, String)>,
     bloque: Vec<Stmt>,
 }
 
 enum Stmt {
-    DeclVar(String, Expr),
+    DeclVar { tipo: Tipo, nombre: String, expr: Expr, es_constante: bool },
     Asignacion(String, Expr),
     AsignacionIndexada(String, Expr, Expr),
     Chivato(Expr),
@@ -439,9 +473,18 @@ impl Parser {
         }
     }
 
-    fn tipo(&mut self, permitir_na: bool) -> Result<String, String> {
+    fn parse_tipo(&mut self, permitir_na: bool) -> Result<Tipo, String> {
         if self.es_kw(&TIPOS) || (permitir_na && self.es_kw(&["na"])) {
-            self.consumir(TokenType::Keyword)
+            let t_str = self.consumir(TokenType::Keyword)?;
+            match t_str.as_str() {
+                "guita" => Ok(Tipo::Guita),
+                "suelto" => Ok(Tipo::Suelto),
+                "palique" => Ok(Tipo::Palique),
+                "fijo" => Ok(Tipo::Fijo),
+                "peña" => Ok(Tipo::Pena),
+                "na" => Ok(Tipo::Na),
+                _ => self.error("Tipo desconocido."),
+            }
         } else {
             self.error(&format!("Se esperaba un tipo, pero se encontró {}", describir(self.actual())))
         }
@@ -615,10 +658,10 @@ impl Parser {
         self.consumir_kw("josear")?;
         self.consumir(TokenType::ParenIzq)?;
         if self.es_kw(&TIPOS) {
-            self.avanzar();
+            let tipo = self.parse_tipo(false)?;
             let nombre = self.consumir(TokenType::Identificador)?;
             self.consumir(TokenType::Asigna)?;
-            let init = Stmt::DeclVar(nombre, self.expresion(1)?);
+            let init = Stmt::DeclVar { tipo, nombre, expr: self.expresion(1)?, es_constante: false };
             self.consumir(TokenType::PuntoComa)?;
             let cond = self.expresion(1)?;
             self.consumir(TokenType::PuntoComa)?;
@@ -660,18 +703,20 @@ impl Parser {
         self.consumir(TokenType::ParenIzq)?;
         let mut parametros = Vec::new();
         if !self.es(TokenType::ParenDer) {
-            self.tipo(false)?;
-            parametros.push(self.consumir(TokenType::Identificador)?);
+            let t = self.parse_tipo(false)?;
+            let p_nombre = self.consumir(TokenType::Identificador)?;
+            parametros.push((t, p_nombre));
             while self.es(TokenType::Coma) {
                 self.avanzar();
-                self.tipo(false)?;
-                parametros.push(self.consumir(TokenType::Identificador)?);
+                let t = self.parse_tipo(false)?;
+                let p_nombre = self.consumir(TokenType::Identificador)?;
+                parametros.push((t, p_nombre));
             }
         }
         self.consumir(TokenType::ParenDer)?;
         if self.es(TokenType::Flecha) {
             self.avanzar();
-            self.tipo(true)?;
+            self.parse_tipo(true)?;
         }
         let bloque = self.bloque()?;
         Ok(Stmt::DeclFuncion(nombre, Rc::new(Func { parametros, bloque })))
@@ -682,13 +727,22 @@ impl Parser {
             TokenType::Keyword => {
                 let kw = self.actual().valor.clone();
                 match kw.as_str() {
-                    "guita" | "suelto" | "palique" | "fijo" | "peña" => {
+                    "intocable" => {
                         self.avanzar();
+                        let tipo = self.parse_tipo(false)?;
                         let nombre = self.consumir(TokenType::Identificador)?;
                         self.consumir(TokenType::Asigna)?;
-                        let e = self.expresion(1)?;
+                        let expr = self.expresion(1)?;
                         self.consumir(TokenType::PuntoComa)?;
-                        Ok(Stmt::DeclVar(nombre, e))
+                        Ok(Stmt::DeclVar { tipo, nombre, expr, es_constante: true })
+                    }
+                    "guita" | "suelto" | "palique" | "fijo" | "peña" => {
+                        let tipo = self.parse_tipo(false)?;
+                        let nombre = self.consumir(TokenType::Identificador)?;
+                        self.consumir(TokenType::Asigna)?;
+                        let expr = self.expresion(1)?;
+                        self.consumir(TokenType::PuntoComa)?;
+                        Ok(Stmt::DeclVar { tipo, nombre, expr, es_constante: false })
                     }
                     "chivato" => {
                         self.avanzar();
@@ -756,6 +810,13 @@ impl Parser {
 }
 
 // --- 5. INTÉRPRETE ---
+#[derive(Clone)]
+struct Variable {
+    tipo: Tipo,
+    valor: Value,
+    es_constante: bool,
+}
+
 enum Flujo {
     Retorno(Value),
     Break,
@@ -836,8 +897,8 @@ fn operar(op: Op, a: Value, b: Value) -> Res<Value> {
 }
 
 struct Interprete {
-    global: HashMap<String, Value>,
-    marcos: Vec<HashMap<String, Value>>,
+    global: HashMap<String, Variable>,
+    marcos: Vec<HashMap<String, Variable>>,
     funciones: HashMap<String, Rc<Func>>,
     out: BufWriter<io::Stdout>,
 }
@@ -852,34 +913,62 @@ impl Interprete {
         }
     }
 
-    fn buscar(&self, nombre: &str) -> Option<&Value> {
+    fn buscar(&self, nombre: &str) -> Option<&Variable> {
         self.marcos.last().and_then(|m| m.get(nombre)).or_else(|| self.global.get(nombre))
     }
 
-    fn declarar(&mut self, nombre: &str, valor: Value) {
+    fn declarar(&mut self, tipo: Tipo, nombre: &str, valor: Value, es_constante: bool) -> Res<()> {
+        if valor.tipo() != tipo {
+            return err(format!(
+                "¡Poriera! Se esperaba un valor de tipo '{}' para '{}', pero se obtuvo un '{}'.",
+                tipo,
+                nombre,
+                valor.tipo()
+            ));
+        }
+        let var = Variable { tipo, valor, es_constante };
         match self.marcos.last_mut() {
-            Some(m) => m.insert(nombre.to_string(), valor),
-            None => self.global.insert(nombre.to_string(), valor),
+            Some(m) => m.insert(nombre.to_string(), var),
+            None => self.global.insert(nombre.to_string(), var),
         };
+        Ok(())
     }
 
     fn asignar(&mut self, nombre: &str, valor: Value) -> Res<()> {
-        if let Some(slot) = self.marcos.last_mut().and_then(|m| m.get_mut(nombre)) {
-            *slot = valor;
-            return Ok(());
+        let mut variable = if let Some(m) = self.marcos.last_mut() {
+            if let Some(var) = m.get_mut(nombre) {
+                Some(var)
+            } else {
+                self.global.get_mut(nombre)
+            }
+        } else {
+            self.global.get_mut(nombre)
+        };
+
+        if let Some(ref mut var) = variable {
+            if var.es_constante {
+                return err(format!("¡Poriera! La constante 'intocable' '{}' no se puede sobreescribir.", nombre));
+            }
+            if var.tipo != valor.tipo() {
+                return err(format!(
+                    "¡Poriera! No puedes asignar un '{}' a la variable '{}' que es de tipo '{}'.",
+                    valor.tipo(),
+                    nombre,
+                    var.tipo
+                ));
+            }
+            var.valor = valor;
+            Ok(())
+        } else {
+            err(format!("¡Poriera! No puedes asignar a '{}': no existe.", nombre))
         }
-        if let Some(slot) = self.global.get_mut(nombre) {
-            *slot = valor;
-            return Ok(());
-        }
-        err(format!("¡Poriera! No puedes asignar a '{}': no existe.", nombre))
     }
 
     fn eval(&mut self, e: &Expr) -> Res<Value> {
         match e {
             Expr::Literal(v) => Ok(v.clone()),
             Expr::Variable(n) => match self.buscar(n) {
-                Some(v) => Ok(v.clone()),
+                Some(v) => Ok(v.valor.clone()),
                 None => err(format!("¡Poriera! La variable '{}' no existe.", n)),
             },
             Expr::Arreglo(elems) => {
@@ -944,8 +1033,25 @@ impl Interprete {
             ));
         }
         let mut marco = HashMap::with_capacity(args.len());
-        for (p, a) in func.parametros.iter().zip(args) {
-            marco.insert(p.clone(), self.eval(a)?);
+        for ((p_tipo, p_nombre), a) in func.parametros.iter().zip(args) {
+            let val = self.eval(a)?;
+            if val.tipo() != *p_tipo {
+                return err(format!(
+                    "¡Poriera! La movida '{}' esperaba un '{}' para el parámetro '{}', pero se pasó un '{}'.",
+                    nombre,
+                    p_tipo,
+                    p_nombre,
+                    val.tipo()
+                ));
+            }
+            marco.insert(
+                p_nombre.clone(),
+                Variable {
+                    tipo: *p_tipo,
+                    valor: val,
+                    es_constante: false,
+                },
+            );
         }
         if self.marcos.len() >= MAX_PROFUNDIDAD {
             return err(format!("¡Poriera! Demasiada recursión en la movida '{}'.", nombre));
@@ -975,19 +1081,22 @@ impl Interprete {
             Stmt::DeclFuncion(nombre, f) => {
                 self.funciones.insert(nombre.clone(), Rc::clone(f));
             }
-            Stmt::DeclVar(nombre, e) => {
-                let v = self.eval(e)?;
-                self.declarar(nombre, v);
+            Stmt::DeclVar { tipo, nombre, expr, es_constante } => {
+                let v = self.eval(expr)?;
+                self.declarar(*tipo, nombre, v, *es_constante)?;
             }
             Stmt::Asignacion(nombre, e) => {
                 let v = self.eval(e)?;
                 self.asignar(nombre, v)?;
             }
             Stmt::AsignacionIndexada(nombre, idx_expr, val_expr) => {
-                let arr_val = match self.buscar(nombre) {
-                    Some(v) => v.clone(),
+                let (arr_val, es_constante) = match self.buscar(nombre) {
+                    Some(v) => (v.valor.clone(), v.es_constante),
                     None => return err(format!("¡Poriera! La variable '{}' no existe.", nombre)),
                 };
+                if es_constante {
+                    return err(format!("¡Poriera! No se pueden modificar los elementos de la constante 'intocable' '{}'.", nombre));
+                }
                 let idx_val = self.eval(idx_expr)?;
                 let nuevo_val = self.eval(val_expr)?;
                 match (arr_val, idx_val) {

@@ -1,0 +1,9 @@
+movida factorial(guita n){
+    siAcaso(n == 0 estoO n == 1){
+        suelta 1;
+    }
+
+    suelta n * factorial(n-1);
+}
+
+chivato(factorial(5));
