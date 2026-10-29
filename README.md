@@ -13,6 +13,14 @@ Abre una terminal nueva y ejecuta:
 
     puyascript ejemplos/prueba.puya
 
+## Instalar (Windows x64)
+    git clone https://github.com/feliipegm/PuyaScript.git
+    cd PuyaScript
+    instalador\instalar-puyascript-windows.bat
+    
+    Cuando se instale, se debe abrir una nueva terminal o reiniciar el IDE y ejecutar:
+        puyascript ejemplos/prueba.puya
+        
 ## Con Python
 
     python3 src/puyascript.py ejemplos/prueba.puya
