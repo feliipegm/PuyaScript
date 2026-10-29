@@ -7,12 +7,15 @@ PuyaScript es un lenguaje de programación interpretado, de sintaxis inspirada e
 ## 1. Ejecución
 
 ### Con el ejecutable (Rust)
+
 ```bash
 puyascript programa.puya
 ```
-Para instalarlo en Linux x86_64: `bash instalador/instalar-puyascript.sh`. Para compilarlo tú mismo: `rustc -O src/puyascript.rs -o puyascript`.
+
+Para instalarlo en Linux x86_64: `bash instalador/instalar-puyascript.sh`. Para compilarlo tú mismo: `rustc -O src/puyascript.rs -o puyascript` o `cargo build --release`.
 
 ### Con Python
+
 ```bash
 python3 src/puyascript.py programa.puya
 ```
@@ -40,14 +43,14 @@ chivato("¡Ozú, qué calor!");
 
 ## 3. Tipos de datos
 
-| Tipo     | Significado          | Ejemplo            |
-|----------|----------------------|--------------------|
-| `guita`  | Entero               | `42`               |
-| `suelto` | Decimal (float)      | `3.14`             |
-| `palique`| Texto (string)       | `"hola"`           |
-| `fijo`   | Booleano             | `verdá` / `esIA`   |
-| `peña`   | Lista / Arreglo      | `[10, 20, 30]`     |
-| `na`     | Sin valor (retorno de funciones) | —      |
+| Tipo | Significado | Ejemplo |
+| ----- | ----- | ----- |
+| `guita` | Entero | `42` |
+| `suelto` | Decimal (float) | `3.14` |
+| `palique` | Texto (string) | `"hola"` |
+| `fijo` | Booleano | `verdá` / `esIA` |
+| `peña` | Lista / Arreglo | `[10, 20, 30]` |
+| `na` | Sin valor (retorno de funciones) | — |
 
 - `verdá` = verdadero, `esIA` = falso.
 - Los textos van entre comillas dobles `"..."`. No hay secuencias de escape ni comillas dobles dentro de un texto. Un texto sin cerrar da error.
@@ -61,6 +64,7 @@ chivato("¡Ozú, qué calor!");
 ## 4. Variables y Constantes
 
 ### Declaración de Variables
+
 ```puya
 guita edad = 30;
 suelto altura = 1.75;
@@ -70,13 +74,16 @@ peña numeros = [1, 2, 3, 4, 5];
 ```
 
 ### Declaración de Constantes (`intocable`)
+
 La palabra clave `intocable` precede al tipo para declarar una constante inmutable:
+
 ```puya
 intocable guita MAXIMO = 100;
 intocable palique IP_SERVIDOR = "127.0.0.1";
 ```
 
 ### Asignación
+
 ```puya
 edad = edad + 1;
 numeros[0] = 10;
@@ -84,16 +91,45 @@ numeros[0] = 10;
 
 #### Errores de asignación:
 - Asignar a una variable que no existe: `¡Poriera! No puedes asignar a '...': no existe.`
-- Asignar un valor incompatibles con el tipo declarado: `¡Poriera! No puedes asignar un '...' a la variable '...' que es de tipo '...'.`
+- Asignar un valor incompatible con el tipo declarado: `¡Poriera! No puedes asignar un '...' a la variable '...' que es de tipo '...'.`
 - Intentar reasignar o modificar una constante `intocable`: `¡Poriera! La constante 'intocable' '...' no se puede sobreescribir.`
 
 ---
 
-## 5. Listas y Arreglos (`peña`)
+## 5. Entrada de datos (`dame`) y Salida (`chivato`)
+
+### Entrada con `dame`
+La función `dame` permite solicitar y capturar datos por teclado introducidos desde la consola. Siempre devuelve un texto de tipo `palique`.
+
+```puya
+// Con mensaje opcional
+palique nombre = dame("¿Cómo te llamas, quillo? ");
+
+// Sin mensaje
+palique entrada = dame();
+```
+
+> Debido a la rigidez de tipos, asignar el resultado de `dame()` a un tipo distinto de `palique` (como `guita` o `fijo`) provocará un error de tipo en tiempo de ejecución.
+
+### Salida con `chivato`
+
+```puya
+chivato("Hola");
+chivato(5 * 2);
+chivato(3 > 1);       // verdá
+chivato([1, 2, 3]);   // [1, 2, 3]
+```
+
+Los booleanos se imprimen como `verdá` / `esIA`, los arreglos como `[elem1, elem2, ...]`, y una función sin retorno como `na`.
+
+---
+
+## 6. Listas y Arreglos (`peña`)
 
 El tipo de dato `peña` permite almacenar colecciones ordenadas de elementos.
 
 ### Declaración e inicialización
+
 ```puya
 peña notas = [9, 7, 10, 5];
 peña nombres = ["Paco", "Maria", "Manolo"];
@@ -101,13 +137,16 @@ peña vacia = [];
 ```
 
 ### Acceso a elementos
+
 Se accede a cada elemento usando índices de base 0 entre corchetes `[ ]`:
+
 ```puya
 chivato(notas[0]); // Muestra 9
 chivato(nombres[1]); // Muestra "Maria"
 ```
 
 ### Modificación de elementos
+
 ```puya
 peña datos = [10, 20, 30];
 datos[1] = 99;
@@ -118,13 +157,13 @@ Intentar acceder o modificar un índice fuera de los límites de la `peña` prov
 
 ---
 
-## 6. Operadores
+## 7. Operadores
 
-| Categoría      | Operadores                         |
-|----------------|------------------------------------|
-| Aritméticos    | `+  -  *  /` y `-` unario          |
-| Comparación    | `==  !=  <  >  <=  >=`             |
-| Lógicos        | `estoY` (y), `estoO` (o), `noNiNa` (no) |
+| Categoría | Operadores |
+| ----- | ----- |
+| Aritméticos | `+  -  *  /` y `-` unario |
+| Comparación | `==  !=  <  >  <=  >=` |
+| Lógicos | `estoY` (y), `estoO` (o), `noNiNa` (no) |
 
 - `+` entre texto y cualquier otro valor **concatena** (convierte a texto).
 - `/` siempre devuelve decimal (`7 / 2` → `3.5`).
@@ -132,10 +171,11 @@ Intentar acceder o modificar un índice fuera de los límites de la `peña` prov
 - `estoY` y `estoO` hacen cortocircuito: si el lado izquierdo basta, el derecho no se evalúa.
 
 ### Precedencia
+
 De menor a mayor prioridad (a igual nivel, se evalúa de izquierda a derecha):
 
 | Nivel | Operadores |
-|-------|------------|
+| ----- | ----- |
 | 1 | `estoO` |
 | 2 | `estoY` |
 | 3 | `==  !=` |
@@ -152,25 +192,13 @@ chivato((2 + 3) * 4);   // 20
 
 ---
 
-## 7. Salida: `chivato`
-
-```puya
-chivato("Hola");
-chivato(5 * 2);
-chivato(3 > 1);       // verdá
-chivato([1, 2, 3]);   // [1, 2, 3]
-```
-Los booleanos se imprimen como `verdá` / `esIA`, los arreglos como `[elem1, elem2, ...]`, y una función sin retorno como `na`.
-
----
-
 ## 8. Condicionales: `siAcaso` / `siNo` / `oSiNo`
 
-| Palabra   | Equivale a |
-|-----------|------------|
-| `siAcaso` | `if`       |
-| `siNo`    | `else if`  |
-| `oSiNo`   | `else`     |
+| Palabra | Equivale a |
+| ----- | ----- |
+| `siAcaso` | `if` |
+| `siNo` | `else if` |
+| `oSiNo` | `else` |
 
 ```puya
 siAcaso (nota >= 9) {
@@ -181,6 +209,7 @@ siAcaso (nota >= 9) {
     chivato("Suspenso");
 }
 ```
+
 Las condiciones llevan paréntesis; las ramas siempre llevan llaves.
 
 ---
@@ -188,6 +217,7 @@ Las condiciones llevan paréntesis; las ramas siempre llevan llaves.
 ## 9. Bucles: `josear`
 
 ### Tipo `while`
+
 ```puya
 guita i = 0;
 josear (i < 5) {
@@ -197,15 +227,18 @@ josear (i < 5) {
 ```
 
 ### Tipo `for`
+
 ```puya
 josear (guita i = 0; i < 5; i = i + 1) {
     chivato(i);
 }
 ```
+
 - La inicialización debe empezar por un tipo (`guita`, `suelto`, `palique`, `fijo` o `peña`).
 - El paso es una asignación (`i = i + 1`); no existe `i++`.
 
 ### Recorrer una `peña`
+
 ```puya
 peña amigos = ["Paco", "Manolo", "Juana"];
 josear (guita i = 0; i < 3; i = i + 1) {
@@ -214,10 +247,11 @@ josear (guita i = 0; i < 3; i = i + 1) {
 ```
 
 ### Control de bucle
-| Palabra        | Equivale a | Efecto |
-|----------------|-----------|--------|
-| `alCarajoPipa` | `break`    | Sale del bucle (o del `arteCaso`) |
-| `tiraPalante`  | `continue` | Salta a la siguiente iteración    |
+
+| Palabra | Equivale a | Efecto |
+| ----- | ----- | ----- |
+| `alCarajoPipa` | `break` | Sale del bucle (o del `arteCaso`) |
+| `tiraPalante` | `continue` | Salta a la siguiente iteración |
 
 ```puya
 josear (guita i = 0; i < 10; i = i + 1) {
@@ -261,7 +295,7 @@ movida nombre(tipo param1, tipo param2) -> tipoRetorno {
 
 - `suelta` devuelve un valor (equivale a `return`).
 - `-> tipo` es opcional; si se omite, es `na`. El tipo de retorno no se comprueba.
-- Los tipos de los argumentos pasados a la función se verifican al ser llamada.
+- Los tipos de los argumentos pasados a la función se verifican rigurosamente al ser llamada.
 - Se pueden llamar como expresión o como sentencia (`saluda("Ana");`).
 - Se admite recursividad.
 
@@ -298,7 +332,7 @@ saluda("Paco");
 ## 13. Palabras reservadas
 
 **En uso:**
-`guita`, `suelto`, `palique`, `fijo`, `peña`, `intocable`, `na`, `verdá`, `esIA`, `chivato`, `siAcaso`, `siNo`, `oSiNo`, `josear`, `alCarajoPipa`, `tiraPalante`, `arteCaso`, `caso`, `movida`, `suelta`, `estoY`, `estoO`, `noNiNa`
+`guita`, `suelto`, `palique`, `fijo`, `peña`, `intocable`, `na`, `verdá`, `esIA`, `chivato`, `dame`, `siAcaso`, `siNo`, `oSiNo`, `josear`, `alCarajoPipa`, `tiraPalante`, `arteCaso`, `caso`, `movida`, `suelta`, `estoY`, `estoO`, `noNiNa`
 
 **Reservadas sin uso actual** (reservadas para futuras versiones):
 `trincar`, `banda`, `churumbel`, `poriera`, `esto`, `mamaDe`, `privao`, `palPueblo`, `roña`
@@ -324,9 +358,10 @@ arteCaso     := 'arteCaso' '(' expr ')' '{' ( 'caso' expr ':' sentencia* )* '}'
 movida       := 'movida' ID '(' (tipo ID (',' tipo ID)*)? ')' ('->' tipo)? bloque
 suelta       := 'suelta' expresion ';'
 bloque       := '{' sentencia* '}'
-expresion    := unaria ( operador unaria )*          // con precedencia (sección 6)
+expresion    := unaria ( operador unaria )*          // con precedencia (sección 7)
 unaria       := ( 'noNiNa' | '-' ) unaria | primaria
 primaria     := NUMERO | TEXTO | 'verdá' | 'esIA' | ID | ID '(' args ')'
+              | 'dame' ( '(' expresion? ')' )?
               | '[' (expresion (',' expresion)*)? ']'
               | primaria '[' expresion ']'
               | '(' expresion ')'
@@ -337,7 +372,7 @@ primaria     := NUMERO | TEXTO | 'verdá' | 'esIA' | ID | ID '(' args ')'
 ## 15. Limitaciones conocidas
 
 - **Sin `default`** en `arteCaso`.
-- **Sin entrada de usuario**, objetos ni librería estándar.
+- **Sin objetos** ni librería estándar avanzada.
 - Los errores de ejecución (no los de lexer/parser) no indican número de línea.
 
 ---
@@ -345,20 +380,17 @@ primaria     := NUMERO | TEXTO | 'verdá' | 'esIA' | ID | ID '(' args ')'
 ## 16. Ejemplo completo
 
 ```puya
-// Ejemplo con peña, constantes y comprobación de tipos
+// Ejemplo interactivo con dame, peña y constantes
 intocable guita MAX_INTENTOS = 3;
-intocable palique PREFIJO = "Aviso: ";
+intocable palique SALUDO = "¡Bienvenido a PuyaScript!";
 
-movida procesarPeña(peña lista, guita limite) {
-    josear (guita i = 0; i < limite; i = i + 1) {
-        siAcaso (i >= MAX_INTENTOS) {
-            chivato(PREFIJO + "Límite alcanzado");
-            alCarajoPipa;
-        }
-        chivato("Elemento " + i + ": " + lista[i]);
-    }
+chivato(SALUDO);
+palique usuario = dame("¿Quién entra por la puerta? ");
+
+chivato("Hola, " + usuario + ". Vamos a guardar tus datos.");
+
+peña listaNombres = [usuario, "Migue", "Lola"];
+josear (guita i = 0; i < 3; i = i + 1) {
+    chivato("En el puesto " + i + " tenemos a: " + listaNombres[i]);
 }
-
-peña misNumeros = [10, 20, 30, 40];
-procesarPeña(misNumeros, 4);
 ```

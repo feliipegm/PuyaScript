@@ -1,0 +1,42 @@
+movida busquedaBinaria(peña lista, guita objetivo) -> guita {
+    guita izq = 0;
+    guita der = 4; // Tamaño - 1
+    guita encontrado = -1;
+
+    josear (izq <= der) {
+        guita medio = 2; 
+
+        // Aquí usamos directamente 'siNo (condicion)' sin repetir 'siAcaso'
+        siAcaso (izq == 0 estoY der == 4) {
+            medio = 2;
+        } siNo (izq == 0 estoY der == 1) {
+            medio = 0;
+        } siNo (izq == 3 estoY der == 4) {
+            medio = 4;
+        } oSiNo {
+            medio = izq;
+        }
+
+        siAcaso (lista[medio] == objetivo) {
+            encontrado = medio;
+            alCarajoPipa;
+        } siNo (lista[medio] < objetivo) {
+            izq = medio + 1;
+        } oSiNo {
+            der = medio - 1;
+        }
+    }
+
+    suelta encontrado;
+}
+
+peña listaOrdenada = [10, 20, 30, 40, 50];
+chivato("Búsqueda binaria");
+chivato("Lista para la búsqueda " + listaOrdenada + " buscaremos el 30");
+guita pos = busquedaBinaria(listaOrdenada, 30);
+
+siAcaso (pos != -1) {
+    chivato("¡Ole! El elemento está en la posición (base 0): " + pos);
+} oSiNo {
+    chivato("Ese elemento no está en la peña, compare.");
+}

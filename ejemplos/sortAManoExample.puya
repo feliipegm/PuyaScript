@@ -1,0 +1,18 @@
+movida ordenarBurbuja(peña lista, guita tamano) {
+    josear (guita i = 0; i < tamano; i = i + 1) {
+        josear (guita j = 0; j < tamano - 1; j = j + 1) {
+            siAcaso (lista[j] > lista[j + 1]) {
+                // Intercambio de elementos
+                guita temp = lista[j];
+                lista[j] = lista[j + 1];
+                lista[j + 1] = temp;
+            }
+        }
+    }
+}
+
+peña desordenados = [34, 12, 5, 67, 23, 1];
+chivato("Antes de ordenar: " + desordenados);
+
+ordenarBurbuja(desordenados, 6);
+chivato("¡Ole y ole, ordenados con arte!: " + desordenados);

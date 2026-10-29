@@ -24,7 +24,7 @@ Abre una terminal nueva y ejecuta:
     rustc puyascript.rs -O
     copy src/instalador/puyascript.exe /instalador o mover el .exe a la carpeta instalador
     Luego ejecutar 
-        instalador\instalar-puyascript-windows.bat
+        instalador/instalar-puyascript-windows.bat
     Una vez instalado, reiniciar el terminal o el IDE.```
 
 ## Con Python

@@ -1,0 +1,20 @@
+// ==========================================
+// Máximo Común Divisor (MCD) - Euclides
+// ==========================================
+
+movida calcularMCD(suelto a, suelto b) -> guita {
+    josear (b != 0) {
+        suelto temporal = b;
+        // Simulamos el resto mediante resta y multiplicación lógica
+        // b = a % b
+        b = a - (a / b) * b; 
+        a = temporal;
+    }
+    suelta a;
+}
+
+suelto num1 = 48.0;
+suelto num2 = 18.0;
+suelto resultadoMCD = calcularMCD(num1, num2);
+
+chivato("El MCD de " + num1 + " y " + num2 + " es: " + resultadoMCD);
