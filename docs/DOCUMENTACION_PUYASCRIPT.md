@@ -47,11 +47,13 @@ chivato("¡Ozú, qué calor!");
 | `suelto` | Decimal (float)      | `3.14`             |
 | `palique`| Texto (string)       | `"hola"`           |
 | `fijo`   | Booleano             | `verdá` / `esIA`   |
+| `peña`   | Lista / Arreglo      | `[10, 20, 30]`     |
 | `na`     | Sin valor (retorno de funciones) | —      |
 
 - `verdá` = verdadero, `esIA` = falso.
 - Los textos van entre comillas dobles `"..."`. No hay secuencias de escape ni comillas dobles dentro de un texto. Un texto sin cerrar da error.
 - Los números negativos se escriben con el operador `-` (`-5`, `-x`).
+- Los arreglos (`peña`) se delimitan con corchetes `[...]` y sus elementos se separan por comas.
 
 > Los tipos se usan al declarar, pero **no se comprueban** en ejecución: el intérprete no impide guardar un `palique` en una variable `guita`.
 
@@ -65,17 +67,48 @@ guita edad = 30;
 suelto altura = 1.75;
 palique nombre = "Manolo";
 fijo contento = verdá;
+peña numeros = [1, 2, 3, 4, 5];
 ```
 
 ### Asignación
 ```puya
 edad = edad + 1;
+numeros[0] = 10;
 ```
 Asignar a una variable que no existe lanza `¡Poriera! No puedes asignar a '...': no existe.`
 
 ---
 
-## 5. Operadores
+## 5. Listas y Arreglos (`peña`)
+
+El tipo de dato `peña` permite almacenar colecciones ordenadas de elementos.
+
+### Declaración e inicialización
+```puya
+peña notas = [9, 7, 10, 5];
+peña nombres = ["Paco", "Maria", "Manolo"];
+peña vacia = [];
+```
+
+### Acceso a elementos
+Se accede a cada elemento usando índices de base 0 entre corchetes `[ ]`:
+```puya
+chivato(notas[0]); // Muestra 9
+chivato(nombres[1]); // Muestra "Maria"
+```
+
+### Modificación de elementos
+```puya
+peña datos = [10, 20, 30];
+datos[1] = 99;
+chivato(datos); // Muestra [10, 99, 30]
+```
+
+Intentar acceder o modificar un índice fuera de los límites de la `peña` provocará un error de ejecución: `¡Poriera! Índice fuera de los límites de la peña.`
+
+---
+
+## 6. Operadores
 
 | Categoría      | Operadores                         |
 |----------------|------------------------------------|
@@ -100,7 +133,7 @@ De menor a mayor prioridad (a igual nivel, se evalúa de izquierda a derecha):
 | 5 | `+  -` |
 | 6 | `*  /` |
 
-Los paréntesis siempre tienen prioridad.
+Los paréntesis y corchetes de acceso a arreglos siempre tienen prioridad.
 
 ```puya
 chivato(2 + 3 * 4);     // 14
@@ -109,18 +142,19 @@ chivato((2 + 3) * 4);   // 20
 
 ---
 
-## 6. Salida: `chivato`
+## 7. Salida: `chivato`
 
 ```puya
 chivato("Hola");
 chivato(5 * 2);
-chivato(3 > 1);   // verdá
+chivato(3 > 1);       // verdá
+chivato([1, 2, 3]);   // [1, 2, 3]
 ```
-Los booleanos se imprimen como `verdá` / `esIA`, y una función sin retorno como `na`.
+Los booleanos se imprimen como `verdá` / `esIA`, los arreglos como `[elem1, elem2, ...]`, y una función sin retorno como `na`.
 
 ---
 
-## 7. Condicionales: `siAcaso` / `siNo` / `oSiNo`
+## 8. Condicionales: `siAcaso` / `siNo` / `oSiNo`
 
 | Palabra   | Equivale a |
 |-----------|------------|
@@ -141,7 +175,7 @@ Las condiciones llevan paréntesis; las ramas siempre llevan llaves.
 
 ---
 
-## 8. Bucles: `josear`
+## 9. Bucles: `josear`
 
 ### Tipo `while`
 ```puya
@@ -158,8 +192,16 @@ josear (guita i = 0; i < 5; i = i + 1) {
     chivato(i);
 }
 ```
-- La inicialización debe empezar por un tipo (`guita`, `suelto`, `palique` o `fijo`).
+- La inicialización debe empezar por un tipo (`guita`, `suelto`, `palique`, `fijo` o `peña`).
 - El paso es una asignación (`i = i + 1`); no existe `i++`.
+
+### Recorrer una `peña`
+```puya
+peña amigos = ["Paco", "Manolo", "Juana"];
+josear (guita i = 0; i < 3; i = i + 1) {
+    chivato("Un saludo a " + amigos[i]);
+}
+```
 
 ### Control de bucle
 | Palabra        | Equivale a | Efecto |
@@ -177,7 +219,7 @@ josear (guita i = 0; i < 10; i = i + 1) {
 
 ---
 
-## 9. Selección múltiple: `arteCaso` / `caso`
+## 10. Selección múltiple: `arteCaso` / `caso`
 
 Equivale a `switch`. **Tiene fall-through**: una vez que un `caso` coincide, se ejecutan los siguientes hasta encontrar `alCarajoPipa`. No existe `default`.
 
@@ -198,7 +240,7 @@ arteCaso (dia) {
 
 ---
 
-## 10. Funciones: `movida` y `suelta`
+## 11. Funciones: `movida` y `suelta`
 
 ```puya
 movida nombre(tipo param1, tipo param2) -> tipoRetorno {
@@ -231,11 +273,9 @@ chivato(factorial(5));     // 120
 saluda("Paco");
 ```
 
-Las funciones declaradas en el nivel principal se pueden llamar aunque estén más abajo en el archivo. Al llamar, el número de argumentos debe coincidir con el de parámetros.
-
 ---
 
-## 11. Ámbito de variables
+## 12. Ámbito de variables
 
 - Las variables globales son visibles desde las funciones.
 - Cada llamada a función crea una memoria local con sus parámetros.
@@ -244,25 +284,26 @@ Las funciones declaradas en el nivel principal se pueden llamar aunque estén m�
 
 ---
 
-## 12. Palabras reservadas
+## 13. Palabras reservadas
 
 **En uso:**
-`guita`, `suelto`, `palique`, `fijo`, `na`, `verdá`, `esIA`, `chivato`, `siAcaso`, `siNo`, `oSiNo`, `josear`, `alCarajoPipa`, `tiraPalante`, `arteCaso`, `caso`, `movida`, `suelta`, `estoY`, `estoO`, `noNiNa`
+`guita`, `suelto`, `palique`, `fijo`, `peña`, `na`, `verdá`, `esIA`, `chivato`, `siAcaso`, `siNo`, `oSiNo`, `josear`, `alCarajoPipa`, `tiraPalante`, `arteCaso`, `caso`, `movida`, `suelta`, `estoY`, `estoO`, `noNiNa`
 
 **Reservadas sin uso actual** (reservadas para futuras versiones):
-`trincar`, `banda`, `churumbel`, `poriera`, `esto`, `intocable`, `mamaDe`, `privao`, `palPueblo`, `roña`, `peña`
+`trincar`, `banda`, `churumbel`, `poriera`, `esto`, `intocable`, `mamaDe`, `privao`, `palPueblo`, `roña`
 
 ---
 
-## 13. Gramática resumida
+## 14. Gramática resumida
 
 ```
 programa     := sentencia*
-sentencia    := declVar | asignacion | llamada ';' | chivato | siAcaso
-              | josear | arteCaso | movida | suelta | alCarajoPipa ';'
+sentencia    := declVar | asignacion | asignacionIndexada | llamada ';' | chivato 
+              | siAcaso | josear | arteCaso | movida | suelta | alCarajoPipa ';'
               | tiraPalante ';'
 declVar      := tipo ID '=' expresion ';'
 asignacion   := ID '=' expresion ';'
+asignacionIndexada := ID '[' expresion ']' '=' expresion ';'
 chivato      := 'chivato' '(' expresion ')' ';'
 siAcaso      := 'siAcaso' '(' expr ')' bloque
                 ( 'siNo' '(' expr ')' bloque )* ( 'oSiNo' bloque )?
@@ -272,46 +313,44 @@ arteCaso     := 'arteCaso' '(' expr ')' '{' ( 'caso' expr ':' sentencia* )* '}'
 movida       := 'movida' ID '(' (tipo ID (',' tipo ID)*)? ')' ('->' tipo)? bloque
 suelta       := 'suelta' expresion ';'
 bloque       := '{' sentencia* '}'
-expresion    := unaria ( operador unaria )*          // con precedencia (sección 5)
+expresion    := unaria ( operador unaria )*          // con precedencia (sección 6)
 unaria       := ( 'noNiNa' | '-' ) unaria | primaria
 primaria     := NUMERO | TEXTO | 'verdá' | 'esIA' | ID | ID '(' args ')'
+              | '[' (expresion (',' expresion)*)? ']'
+              | primaria '[' expresion ']'
               | '(' expresion ')'
 ```
 
 ---
 
-## 14. Limitaciones conocidas
+## 15. Limitaciones conocidas
 
 - **Sin `default`** en `arteCaso`.
-- **Sin entrada de usuario**, listas, objetos ni librería estándar (solo `chivato` para imprimir).
+- **Sin entrada de usuario**, objetos ni librería estándar.
 - Los tipos declarados no se comprueban en ejecución.
 - Los errores de ejecución (no los de lexer/parser) no indican línea.
 
-### Errores
-- `suelta` fuera de una función, y `alCarajoPipa`/`tiraPalante` fuera de un bucle, dan un error de PuyaScript.
-- División por cero y operaciones con tipos incompatibles dan `¡Poriera! ...`.
-- Los errores de lexer y parser indican la línea: `¡Poriera! (línea 3) ...`.
-- Si hay un error, el programa termina con código de salida 1.
-
 ---
 
-## 15. Ejemplo completo
+## 16. Ejemplo completo con `peña`
 
 ```puya
-// Tabla de multiplicar y números pares
-movida tabla(guita n) {
-    josear (guita i = 1; i <= 10; i = i + 1) {
-        chivato(n + " x " + i + " = " + (n * i));
+// Ejemplo con peña y funciones
+movida sumarPena(peña lista, guita tamano) -> guita {
+    guita total = 0;
+    josear (guita i = 0; i < tamano; i = i + 1) {
+        total = total + lista[i];
     }
+    suelta total;
 }
 
-tabla(7);
+peña misNumeros = [10, 20, 30, 40];
+chivato("Valores originales: " + misNumeros);
 
-josear (guita i = 0; i < 10; i = i + 1) {
-    siAcaso ((i / 2) * 2 == i) {
-        chivato(i + " es par");
-    } oSiNo {
-        chivato(i + " es impar");
-    }
-}
+// Modificar elemento de la peña
+misNumeros[2] = 50;
+chivato("Valores modificados: " + misNumeros);
+
+guita resultado = sumarPena(misNumeros, 4);
+chivato("La suma total es: " + resultado);
 ```

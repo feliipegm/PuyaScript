@@ -1,0 +1,5 @@
+peña numeros = [1,2,3,4];
+
+josear(guita i = 0; i < 3; i = i+1){
+    chivato(numeros[i]);
+}
