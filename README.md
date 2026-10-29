@@ -23,4 +23,4 @@ Abre una terminal nueva y ejecuta:
 
 ## Documentación
 
-Mira `docs/DOCUMENTACION_PUYASCRIPT.md`.
+[Enlace a la documentación](DOCUMENTACION_PUYASCRIPT.md)
