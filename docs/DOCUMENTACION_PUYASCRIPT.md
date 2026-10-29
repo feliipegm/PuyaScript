@@ -1,17 +1,24 @@
 # PuyaScript — Documentación
 
-PuyaScript es un lenguaje de programación interpretado, de sintaxis inspirada en la jerga andaluza. Su intérprete está escrito en Python 3 y funciona en tres fases: **lexer → parser (AST) → intérprete**.
+PuyaScript es un lenguaje de programación interpretado, de sintaxis inspirada en la jerga andaluza. Hay dos intérpretes equivalentes, uno en Rust (`src/puyascript.rs`, el principal) y otro en Python 3 (`src/puyascript.py`). Ambos funcionan en tres fases: **lexer → parser (AST) → intérprete**.
 
 ---
 
 ## 1. Ejecución
 
+### Con el ejecutable (Rust)
 ```bash
-python puyascript.py programa.puya
+puyascript programa.puya
+```
+Para instalarlo en Linux x86_64: `bash instalador/instalar-puyascript.sh`. Para compilarlo tú mismo: `rustc -O src/puyascript.rs -o puyascript`.
+
+### Con Python
+```bash
+python3 src/puyascript.py programa.puya
 ```
 
 - El archivo **debe** tener extensión `.puya`, o el intérprete aborta con `¡Poriera! El archivo tiene que ser .puya`.
-- Los errores se muestran como `Error fatal: <mensaje>`.
+- Los errores se muestran como `Error fatal: <mensaje>` y el programa termina con código de salida 1. En la versión Rust van a `stderr`.
 - Los errores propios del lenguaje empiezan por `¡Poriera!`.
 
 ---
@@ -42,8 +49,8 @@ chivato("¡Ozú, qué calor!");
 | `na`     | Sin valor (retorno de funciones) | —      |
 
 - `verdá` = verdadero, `esIA` = falso.
-- Los textos van entre comillas dobles `"..."`. No hay secuencias de escape ni comillas dobles dentro de un texto.
-- Los números no admiten signo en el literal (ver *Limitaciones*).
+- Los textos van entre comillas dobles `"..."`. No hay secuencias de escape ni comillas dobles dentro de un texto. Un texto sin cerrar da error.
+- Los números negativos se escriben con el operador `-` (`-5`, `-x`).
 
 > Los tipos se usan al declarar, pero **no se comprueban** en ejecución: el intérprete no impide guardar un `palique` en una variable `guita`.
 
@@ -63,7 +70,7 @@ fijo contento = verdá;
 ```puya
 edad = edad + 1;
 ```
-Asignar a una variable que no existe lanza `¡Poriera! No puedes asignar a '...'`.
+Asignar a una variable que no existe lanza `¡Poriera! No puedes asignar a '...': no existe.`
 
 ---
 
@@ -71,20 +78,32 @@ Asignar a una variable que no existe lanza `¡Poriera! No puedes asignar a '...'
 
 | Categoría      | Operadores                         |
 |----------------|------------------------------------|
-| Aritméticos    | `+  -  *  /`                       |
+| Aritméticos    | `+  -  *  /` y `-` unario          |
 | Comparación    | `==  !=  <  >  <=  >=`             |
 | Lógicos        | `estoY` (y), `estoO` (o), `noNiNa` (no) |
 
 - `+` entre texto y cualquier otro valor **concatena** (convierte a texto).
 - `/` siempre devuelve decimal (`7 / 2` → `3.5`).
-- `noNiNa` es unario y se aplica a la expresión primaria que le sigue: `noNiNa contento`, `noNiNa (a > b)`.
+- `noNiNa` y `-` son unarios y se aplican al operando que les sigue: `noNiNa contento`, `noNiNa (a > b)`, `-x`.
+- `estoY` y `estoO` hacen cortocircuito: si el lado izquierdo basta, el derecho no se evalúa.
 
-### Precedencia (¡importante!)
-**No hay precedencia de operadores:** las expresiones se evalúan **de izquierda a derecha**. Usa paréntesis para agrupar.
+### Precedencia
+De menor a mayor prioridad (a igual nivel, se evalúa de izquierda a derecha):
+
+| Nivel | Operadores |
+|-------|------------|
+| 1 | `estoO` |
+| 2 | `estoY` |
+| 3 | `==  !=` |
+| 4 | `<  >  <=  >=` |
+| 5 | `+  -` |
+| 6 | `*  /` |
+
+Los paréntesis siempre tienen prioridad.
 
 ```puya
-chivato(2 + 3 * 4);     // 20, no 14
-chivato(2 + (3 * 4));   // 14
+chivato(2 + 3 * 4);     // 14
+chivato((2 + 3) * 4);   // 20
 ```
 
 ---
@@ -96,7 +115,7 @@ chivato("Hola");
 chivato(5 * 2);
 chivato(3 > 1);   // verdá
 ```
-Los booleanos se imprimen como `verdá` / `esIA`.
+Los booleanos se imprimen como `verdá` / `esIA`, y una función sin retorno como `na`.
 
 ---
 
@@ -211,7 +230,7 @@ chivato(factorial(5));     // 120
 saluda("Paco");
 ```
 
-La función debe haberse **declarado antes** de ejecutarse la llamada (las declaraciones se registran al ejecutarse, no al leer el archivo).
+Las funciones declaradas en el nivel principal se pueden llamar aunque estén más abajo en el archivo. Al llamar, el número de argumentos debe coincidir con el de parámetros.
 
 ---
 
@@ -220,7 +239,7 @@ La función debe haberse **declarado antes** de ejecutarse la llamada (las decla
 - Las variables globales son visibles desde las funciones.
 - Cada llamada a función crea una memoria local con sus parámetros.
 - **No hay ámbito de bloque**: una variable declarada dentro de un `siAcaso` o `josear` pertenece a la función (o al programa) que lo contiene.
-- La búsqueda de variables recorre la pila de llamadas, por lo que una función también puede ver las variables locales de quien la llamó (ámbito dinámico).
+- Una función solo ve sus propias variables y las globales; no ve las locales de quien la llamó.
 
 ---
 
@@ -252,23 +271,26 @@ arteCaso     := 'arteCaso' '(' expr ')' '{' ( 'caso' expr ':' sentencia* )* '}'
 movida       := 'movida' ID '(' (tipo ID (',' tipo ID)*)? ')' ('->' tipo)? bloque
 suelta       := 'suelta' expresion ';'
 bloque       := '{' sentencia* '}'
-expresion    := primaria ( operador primaria )*      // izquierda a derecha
+expresion    := unaria ( operador unaria )*          // con precedencia (sección 5)
+unaria       := ( 'noNiNa' | '-' ) unaria | primaria
 primaria     := NUMERO | TEXTO | 'verdá' | 'esIA' | ID | ID '(' args ')'
-              | '(' expresion ')' | 'noNiNa' primaria
+              | '(' expresion ')'
 ```
 
 ---
 
 ## 14. Limitaciones conocidas
 
-- **Sin números negativos literales:** `-5` da error. Usa `0 - 5`.
-- **Sin precedencia de operadores** (ver sección 5).
 - **Sin `default`** en `arteCaso`.
 - **Sin entrada de usuario**, listas, objetos ni librería estándar (solo `chivato` para imprimir).
-- **`suelta` fuera de una función** produce un `Error fatal:` con mensaje vacío.
-- Al concatenar un `fijo` con texto, se muestra `True`/`False` (de Python) en vez de `verdá`/`esIA`.
-- La división por cero y otros fallos de tipo (p. ej. restar un texto) muestran el error interno de Python tras `Error fatal:`.
-- Los errores no indican línea ni columna.
+- Los tipos declarados no se comprueban en ejecución.
+- Los errores de ejecución (no los de lexer/parser) no indican línea.
+
+### Errores
+- `suelta` fuera de una función, y `alCarajoPipa`/`tiraPalante` fuera de un bucle, dan un error de PuyaScript.
+- División por cero y operaciones con tipos incompatibles dan `¡Poriera! ...`.
+- Los errores de lexer y parser indican la línea: `¡Poriera! (línea 3) ...`.
+- Si hay un error, el programa termina con código de salida 1.
 
 ---
 
